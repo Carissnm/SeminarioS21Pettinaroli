@@ -30,7 +30,7 @@ CREATE TABLE administrador (
   estado         ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO'
 ) ENGINE=InnoDB;
 
--- Socio (sin DEFAULT en fecha_alta; con CHECK de fechas)
+-- Socio 
 CREATE TABLE socio (
   id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   nombre         VARCHAR(80)  NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE socio (
   INDEX idx_socio_apellido_nombre (apellido, nombre)
 ) ENGINE=InnoDB;
 
--- Parámetros globales (clave-valor)
+-- Parámetros globales 
 CREATE TABLE parametros_globales (
   clave          VARCHAR(64)  PRIMARY KEY,
   valor_num      DECIMAL(14,4) NULL,
@@ -55,7 +55,7 @@ CREATE TABLE parametros_globales (
   descripcion    VARCHAR(255)  NULL
 ) ENGINE=InnoDB;
 
--- Cuenta (1:1 con Socio)
+-- Cuenta 
 CREATE TABLE cuenta (
   id             BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   socio_id       BIGINT UNSIGNED NOT NULL UNIQUE,
@@ -65,7 +65,7 @@ CREATE TABLE cuenta (
     ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
--- Apto médico (1 -> 0..1, PK = FK) + CHECK de fechas
+-- Apto médico 
 CREATE TABLE apto_medico (
   socio_id          BIGINT UNSIGNED NOT NULL,
   fecha_emision     DATE NOT NULL,
@@ -90,7 +90,7 @@ CREATE TABLE actividad (
   actualizado_en  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Inscripcion (Socio ↔ Actividad) sin DEFAULT en fecha_alta + CHECK
+-- Inscripcion (Socio ↔ Actividad) 
 CREATE TABLE inscripcion (
   id            BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   socio_id      BIGINT UNSIGNED NOT NULL,
@@ -160,7 +160,7 @@ DELIMITER ;
 -- VISTAS (útiles para control)
 -- =========================
 
-CREATE OR REPLACE VIEW vw_estado_cuenta_por_socio AS
+/* CREATE OR REPLACE VIEW vw_estado_cuenta_por_socio AS
 SELECT
   s.id              AS socio_id,
   s.dni,
@@ -182,7 +182,7 @@ FROM movimiento_cuenta m
 JOIN cuenta c         ON c.id = m.cuenta_id
 JOIN socio  s         ON s.id = c.socio_id
 LEFT JOIN inscripcion i ON i.id = m.inscripcion_id
-LEFT JOIN actividad  a  ON a.id = i.actividad_id;
+LEFT JOIN actividad  a  ON a.id = i.actividad_id; */
 
 -- =========================
 -- DATOS INICIALES
@@ -220,7 +220,7 @@ FROM socio s
 LEFT JOIN cuenta c ON c.socio_id = s.id
 WHERE c.socio_id IS NULL;
 
--- Aptos médicos (algunos socios)
+-- Aptos médicos 
 INSERT INTO apto_medico (socio_id, fecha_emision, fecha_vencimiento)
 SELECT id, '2025-05-01', '2026-05-31' FROM socio WHERE dni IN ('31915282')
 ON DUPLICATE KEY UPDATE fecha_emision=VALUES(fecha_emision), fecha_vencimiento=VALUES(fecha_vencimiento);
@@ -318,7 +318,7 @@ BEGIN
     AND a.precio_default IS NOT NULL
     AND i.fecha_alta <= v_last
     AND (i.fecha_baja IS NULL OR i.fecha_baja >= v_first)
-    AND NOT EXISTS (  -- ya cobrada esa inscripción ese mes?
+    AND NOT EXISTS (  
       SELECT 1 FROM movimiento_cuenta m
       WHERE m.cuenta_id = c.id
         AND m.tipo = 'INSCRIPCION_ACTIVIDAD'
